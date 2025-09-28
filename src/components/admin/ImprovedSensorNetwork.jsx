@@ -5,6 +5,9 @@ import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
 import { Input } from '../ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { useMine } from '../../contexts/MineContext';
+import { useTheme } from '../../contexts/ThemeContext';
+import PageHeader from '../PageHeader';
 import {
   Radio,
   Activity,
@@ -32,12 +35,18 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts';
-import { mockSensorData, getRiskColor } from '../../mockData';
+import { getRiskColor } from '../../mockData';
 
 const ImprovedSensorNetwork = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSector, setSelectedSector] = useState('all');
   const [selectedSensor, setSelectedSensor] = useState(null);
+
+  // Use global mine context
+  const { currentMine } = useMine();
+
+  // Get mine-specific sensor data
+  const mineSensorData = currentMine.sensorData || {};
 
   // Enhanced sensor details with historical data
   const sensorDetails = [
@@ -49,7 +58,7 @@ const ImprovedSensorNetwork = () => {
       status: 'active',
       battery: 89,
       signal: 92,
-      lastReading: '12.9°',
+      lastReading: `${mineSensorData.tiltmeter?.current || 12.9}°`,
       threshold: '25°',
       calibrationDate: '2025-01-15',
       manufacturer: 'GeoTech Pro',
@@ -59,11 +68,14 @@ const ImprovedSensorNetwork = () => {
         { time: '04:00', value: 11.1 },
         { time: '08:00', value: 11.8 },
         { time: '12:00', value: 12.3 },
-        { time: '16:00', value: 12.9 },
+        { time: '16:00', value: mineSensorData.tiltmeter?.current || 12.9 },
         { time: '20:00', value: 13.1 },
         { time: '24:00', value: 13.4 }
       ],
-      ...mockSensorData.tiltmeter
+      current: mineSensorData.tiltmeter?.current || 12.9,
+      max: 25,
+      percentage: mineSensorData.tiltmeter?.percentage || 52,
+      status: mineSensorData.tiltmeter?.status || 'warning'
     },
     {
       id: 'PIEZO_002',
@@ -73,7 +85,7 @@ const ImprovedSensorNetwork = () => {
       status: 'active',
       battery: 76,
       signal: 88,
-      lastReading: '8.5 kPa',
+      lastReading: `${mineSensorData.piezometer?.current || 8.5} kPa`,
       threshold: '20 kPa',
       calibrationDate: '2025-01-12',
       manufacturer: 'HydroPressure',
@@ -83,11 +95,14 @@ const ImprovedSensorNetwork = () => {
         { time: '04:00', value: 7.2 },
         { time: '08:00', value: 7.8 },
         { time: '12:00', value: 8.1 },
-        { time: '16:00', value: 8.5 },
+        { time: '16:00', value: mineSensorData.piezometer?.current || 8.5 },
         { time: '20:00', value: 8.7 },
         { time: '24:00', value: 8.9 }
       ],
-      ...mockSensorData.piezometer
+      current: mineSensorData.piezometer?.current || 8.5,
+      max: 20,
+      percentage: mineSensorData.piezometer?.percentage || 43,
+      status: mineSensorData.piezometer?.status || 'normal'
     },
     {
       id: 'VIB_003',
@@ -97,7 +112,7 @@ const ImprovedSensorNetwork = () => {
       status: 'warning',
       battery: 94,
       signal: 95,
-      lastReading: '19.8 Hz',
+      lastReading: `${mineSensorData.vibration?.current || 19.8} Hz`,
       threshold: '25 Hz',
       calibrationDate: '2025-01-10',
       manufacturer: 'SeismicSense',
@@ -107,11 +122,14 @@ const ImprovedSensorNetwork = () => {
         { time: '04:00', value: 16.8 },
         { time: '08:00', value: 17.5 },
         { time: '12:00', value: 18.9 },
-        { time: '16:00', value: 19.8 },
+        { time: '16:00', value: mineSensorData.vibration?.current || 19.8 },
         { time: '20:00', value: 20.2 },
         { time: '24:00', value: 20.8 }
       ],
-      ...mockSensorData.vibration
+      current: mineSensorData.vibration?.current || 19.8,
+      max: 25,
+      percentage: mineSensorData.vibration?.percentage || 79,
+      status: mineSensorData.vibration?.status || 'critical'
     },
     {
       id: 'CRACK_004',
@@ -121,7 +139,7 @@ const ImprovedSensorNetwork = () => {
       status: 'active',
       battery: 67,
       signal: 79,
-      lastReading: '11.0 mm',
+      lastReading: `${mineSensorData.crackmeter?.current || 11.0} mm`,
       threshold: '25 mm',
       calibrationDate: '2025-01-18',
       manufacturer: 'CrackWatch',
@@ -131,11 +149,14 @@ const ImprovedSensorNetwork = () => {
         { time: '04:00', value: 9.8 },
         { time: '08:00', value: 10.1 },
         { time: '12:00', value: 10.6 },
-        { time: '16:00', value: 11.0 },
+        { time: '16:00', value: mineSensorData.crackmeter?.current || 11.0 },
         { time: '20:00', value: 11.2 },
         { time: '24:00', value: 11.4 }
       ],
-      ...mockSensorData.crackmeter
+      current: mineSensorData.crackmeter?.current || 11.0,
+      max: 25,
+      percentage: mineSensorData.crackmeter?.percentage || 44,
+      status: mineSensorData.crackmeter?.status || 'normal'
     },
     {
       id: 'LIDAR_005',
@@ -219,54 +240,48 @@ const ImprovedSensorNetwork = () => {
   const getTrendIcon = (data) => {
     if (!data || data.length < 2) return null;
     const trend = data[data.length - 1].value - data[data.length - 2].value;
-    return trend > 0 ? 
-      <TrendingUp className="h-3 w-3 text-red-500" /> : 
+    return trend > 0 ?
+      <TrendingUp className="h-3 w-3 text-red-500" /> :
       <TrendingDown className="h-3 w-3 text-green-500" />;
   };
 
   const filteredSensors = sensorDetails.filter(sensor => {
     const matchesSearch = sensor.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          sensor.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          sensor.location.toLowerCase().includes(searchTerm.toLowerCase());
+      sensor.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sensor.location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesSector = selectedSector === 'all' || sensor.sector === selectedSector;
     return matchesSearch && matchesSector;
   });
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 transform hover:scale-[1.01] transition-all duration-300">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800 bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
-              Sensor Network
-            </h1>
-            <p className="text-gray-600 mt-1">Monitor and manage all sensor systems with real-time data</p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="transform hover:scale-110 transition-all duration-200">
-                <Badge className="bg-green-100 text-green-800 px-4 py-2">
-                  {sensorDetails.filter(s => s.status === 'active').length} Active
-                </Badge>
-              </div>
-              <div className="transform hover:scale-110 transition-all duration-200">
-                <Badge className="bg-amber-100 text-amber-800 px-4 py-2">
-                  {sensorDetails.filter(s => s.status === 'warning').length} Warning
-                </Badge>
-              </div>
-              <div className="transform hover:scale-110 transition-all duration-200">
-                <Badge className="bg-gray-100 text-gray-800 px-4 py-2">
-                  {sensorDetails.filter(s => s.status === 'maintenance').length} Maintenance
-                </Badge>
-              </div>
+    <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <PageHeader
+        title="Sensor Network"
+        description="Monitor and manage all sensor systems with real-time data"
+      >
+        <div className="flex items-center space-x-4">
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="transform hover:scale-110 transition-all duration-200">
+              <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-4 py-2">
+                {sensorDetails.filter(s => s.status === 'active').length} Active
+              </Badge>
+            </div>
+            <div className="transform hover:scale-110 transition-all duration-200">
+              <Badge className="bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 px-4 py-2">
+                {sensorDetails.filter(s => s.status === 'warning').length} Warning
+              </Badge>
+            </div>
+            <div className="transform hover:scale-110 transition-all duration-200">
+              <Badge className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-4 py-2">
+                {sensorDetails.filter(s => s.status === 'maintenance').length} Maintenance
+              </Badge>
             </div>
           </div>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Filters */}
-      <Card className="transform hover:shadow-lg transition-all duration-300">
+      <Card className="transform hover:shadow-lg transition-all duration-300 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
             <div className="flex-1">
@@ -276,7 +291,7 @@ const ImprovedSensorNetwork = () => {
                   placeholder="Search sensors by ID, type, or location..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
                 />
               </div>
             </div>
@@ -285,7 +300,7 @@ const ImprovedSensorNetwork = () => {
               <select
                 value={selectedSector}
                 onChange={(e) => setSelectedSector(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                className="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 <option value="all">All Sectors</option>
                 {Array.from(new Set(sensorDetails.map(s => s.sector))).map(sector => (
@@ -298,7 +313,7 @@ const ImprovedSensorNetwork = () => {
       </Card>
 
       <Tabs defaultValue="grid-view" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-2 bg-gray-100 dark:bg-gray-800">
           <TabsTrigger value="grid-view">Grid View</TabsTrigger>
           <TabsTrigger value="detailed-view">Detailed Analysis</TabsTrigger>
         </TabsList>
@@ -307,9 +322,9 @@ const ImprovedSensorNetwork = () => {
           {/* Enhanced Sensor Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredSensors.map((sensor, index) => (
-              <Card 
-                key={sensor.id} 
-                className="hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] cursor-pointer"
+              <Card
+                key={sensor.id}
+                className="hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] cursor-pointer bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                 style={{ animationDelay: `${index * 100}ms` }}
                 onClick={() => setSelectedSensor(sensor)}
               >
@@ -320,8 +335,8 @@ const ImprovedSensorNetwork = () => {
                         {getSensorIcon(sensor.type)}
                       </div>
                       <div>
-                        <CardTitle className="text-lg">{sensor.id}</CardTitle>
-                        <CardDescription className="capitalize">{sensor.type.replace('_', ' ')}</CardDescription>
+                        <CardTitle className="text-lg text-gray-900 dark:text-gray-100">{sensor.id}</CardTitle>
+                        <CardDescription className="capitalize text-gray-600 dark:text-gray-400">{sensor.type.replace('_', ' ')}</CardDescription>
                       </div>
                     </div>
                     <Badge className={getStatusColor(sensor.status)}>
@@ -336,12 +351,12 @@ const ImprovedSensorNetwork = () => {
                   {/* Location & Current Reading */}
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-gray-500">Sector</p>
-                      <p className="font-semibold">{sensor.sector}</p>
+                      <p className="text-gray-500 dark:text-gray-400">Sector</p>
+                      <p className="font-semibold text-gray-900 dark:text-gray-100">{sensor.sector}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500">Location</p>
-                      <p className="font-semibold">{sensor.location}</p>
+                      <p className="text-gray-500 dark:text-gray-400">Location</p>
+                      <p className="font-semibold text-gray-900 dark:text-gray-100">{sensor.location}</p>
                     </div>
                   </div>
 
@@ -358,7 +373,7 @@ const ImprovedSensorNetwork = () => {
                       {sensor.percentage && (
                         <Progress value={sensor.percentage} className="h-2" />
                       )}
-                      <div className="text-xs text-gray-600">
+                      <div className="text-xs text-gray-600 dark:text-gray-400">
                         Threshold: {sensor.threshold} ({sensor.percentage || 'N/A'}%)
                       </div>
                     </div>
@@ -371,8 +386,8 @@ const ImprovedSensorNetwork = () => {
                         <AreaChart data={sensor.historicalData}>
                           <defs>
                             <linearGradient id={`gradient-${sensor.id}`} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor={sensor.status === 'warning' ? '#f59e0b' : '#3b82f6'} stopOpacity={0.8}/>
-                              <stop offset="95%" stopColor={sensor.status === 'warning' ? '#f59e0b' : '#3b82f6'} stopOpacity={0.1}/>
+                              <stop offset="5%" stopColor={sensor.status === 'warning' ? '#f59e0b' : '#3b82f6'} stopOpacity={0.8} />
+                              <stop offset="95%" stopColor={sensor.status === 'warning' ? '#f59e0b' : '#3b82f6'} stopOpacity={0.1} />
                             </linearGradient>
                           </defs>
                           <Area
@@ -412,7 +427,7 @@ const ImprovedSensorNetwork = () => {
                   </div>
 
                   {/* Device Info */}
-                  <div className="text-xs text-gray-500 pt-2 border-t space-y-1">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-600 space-y-1">
                     <div>Model: {sensor.manufacturer} {sensor.model}</div>
                     <div>Calibrated: {sensor.calibrationDate}</div>
                   </div>
@@ -437,13 +452,13 @@ const ImprovedSensorNetwork = () => {
           {selectedSensor ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Detailed Chart */}
-              <Card className="lg:col-span-2">
+              <Card className="lg:col-span-2 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                 <CardHeader>
-                  <CardTitle className="flex items-center">
+                  <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
                     {getSensorIcon(selectedSensor.type)}
                     <span className="ml-2">{selectedSensor.id} - 24h Trend Analysis</span>
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-gray-600 dark:text-gray-400">
                     Detailed sensor readings with predictive analysis
                   </CardDescription>
                 </CardHeader>
@@ -454,10 +469,10 @@ const ImprovedSensorNetwork = () => {
                         <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                         <XAxis dataKey="time" />
                         <YAxis />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: 'white', 
-                            border: '1px solid #e5e7eb', 
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'white',
+                            border: '1px solid #e5e7eb',
                             borderRadius: '8px',
                             boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                           }}
@@ -476,11 +491,11 @@ const ImprovedSensorNetwork = () => {
               </Card>
             </div>
           ) : (
-            <Card>
+            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <CardContent className="p-12 text-center">
                 <BarChart3 className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Select a Sensor</h3>
-                <p className="text-gray-600">Click on any sensor from the grid view to see detailed analysis</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Select a Sensor</h3>
+                <p className="text-gray-600 dark:text-gray-400">Click on any sensor from the grid view to see detailed analysis</p>
               </CardContent>
             </Card>
           )}
@@ -488,35 +503,35 @@ const ImprovedSensorNetwork = () => {
       </Tabs>
 
       {/* Network Health Summary */}
-      <Card className="animate-slideInUp">
+      <Card className="animate-slideInUp bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
-          <CardTitle>Network Health Summary</CardTitle>
+          <CardTitle className="text-gray-900 dark:text-gray-100">Network Health Summary</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="text-center p-4 bg-green-50 rounded-lg transform hover:scale-105 transition-all duration-300">
-              <div className="text-2xl font-bold text-green-700">
+            <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg transform hover:scale-105 transition-all duration-300">
+              <div className="text-2xl font-bold text-green-700 dark:text-green-400">
                 {sensorDetails.filter(s => s.status === 'active').length}
               </div>
-              <div className="text-sm text-green-600">Active Sensors</div>
+              <div className="text-sm text-green-600 dark:text-green-300">Active Sensors</div>
             </div>
-            <div className="text-center p-4 bg-amber-50 rounded-lg transform hover:scale-105 transition-all duration-300">
-              <div className="text-2xl font-bold text-amber-700">
+            <div className="text-center p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg transform hover:scale-105 transition-all duration-300">
+              <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">
                 {Math.round(sensorDetails.reduce((acc, s) => acc + (s.battery || 0), 0) / sensorDetails.length)}%
               </div>
-              <div className="text-sm text-amber-600">Avg Battery</div>
+              <div className="text-sm text-amber-600 dark:text-amber-300">Avg Battery</div>
             </div>
-            <div className="text-center p-4 bg-blue-50 rounded-lg transform hover:scale-105 transition-all duration-300">
-              <div className="text-2xl font-bold text-blue-700">
+            <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg transform hover:scale-105 transition-all duration-300">
+              <div className="text-2xl font-bold text-blue-700 dark:text-blue-400">
                 {Math.round(sensorDetails.reduce((acc, s) => acc + (s.signal || 0), 0) / sensorDetails.length)}%
               </div>
-              <div className="text-sm text-blue-600">Avg Signal</div>
+              <div className="text-sm text-blue-600 dark:text-blue-300">Avg Signal</div>
             </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg transform hover:scale-105 transition-all duration-300">
-              <div className="text-2xl font-bold text-purple-700">
+            <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg transform hover:scale-105 transition-all duration-300">
+              <div className="text-2xl font-bold text-purple-700 dark:text-purple-400">
                 98.5%
               </div>
-              <div className="text-sm text-purple-600">Uptime</div>
+              <div className="text-sm text-purple-600 dark:text-purple-300">Uptime</div>
             </div>
           </div>
         </CardContent>

@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
+import { useTheme } from '../../contexts/ThemeContext';
+import PageHeader from '../PageHeader';
 import {
   RotateCcw,
   ZoomIn,
@@ -49,7 +51,7 @@ const OpenPitMine3D = () => {
 
     // Scene setup
     const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0xa0a0a0, 200, 500);
+    scene.fog = new THREE.Fog(0xFFFFFF, 300, 800); // Clean white fog
     sceneRef.current = scene;
 
     // Camera setup
@@ -66,7 +68,7 @@ const OpenPitMine3D = () => {
     // Renderer setup
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
-    renderer.setClearColor(0x87CEEB, 1);
+    renderer.setClearColor(0xFFFFFF, 1); // Clean white background
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     rendererRef.current = renderer;
@@ -427,32 +429,28 @@ const OpenPitMine3D = () => {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">Open Pit Mine - No Ground Slab</h1>
-            <p className="text-gray-600 mt-1">Clean open pit design starting directly at surface level</p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Badge variant="outline" className="text-green-700 border-green-300">
-              <Activity className="w-3 h-3 mr-1" />
-              Clean Design
-            </Badge>
-          </div>
+    <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <PageHeader
+        title="3D Mine View"
+        description="Interactive 3D visualization of mine structure and operations"
+      >
+        <div className="flex items-center space-x-2">
+          <Badge variant="outline" className="text-green-700 dark:text-green-400 border-green-300 dark:border-green-600">
+            <Activity className="w-3 h-3 mr-1" />
+            Interactive 3D
+          </Badge>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Main 3D View and Controls */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* 3D Visualization */}
-        <Card className="lg:col-span-3">
+        <Card className="lg:col-span-3 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
+            <CardTitle className="flex items-center justify-between text-gray-900 dark:text-gray-100">
               <span className="flex items-center">
                 <Eye className="mr-2 h-5 w-5" />
-                Clean Mine Visualization
+                Interactive Mine Visualization
               </span>
               <div className="flex space-x-2">
                 <Button
@@ -476,14 +474,14 @@ const OpenPitMine3D = () => {
                 </Button>
               </div>
             </CardTitle>
-            <CardDescription>
-              Open pit mine without the unrealistic green ground slab
+            <CardDescription className="text-gray-600 dark:text-gray-400">
+              Interactive 3D visualization with real-time data overlay
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div
               ref={mountRef}
-              className="w-full h-[500px] bg-gradient-to-b from-sky-200 to-sky-400 rounded-lg border-2 border-gray-300 overflow-hidden cursor-grab active:cursor-grabbing shadow-inner"
+              className="w-full h-[500px] bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-300 dark:border-gray-600 overflow-hidden cursor-grab active:cursor-grabbing shadow-inner"
               style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
             />
           </CardContent>
@@ -491,16 +489,16 @@ const OpenPitMine3D = () => {
 
         {/* Controls Panel */}
         <div className="space-y-6">
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center text-sm">
+              <CardTitle className="flex items-center text-sm text-gray-900 dark:text-gray-100">
                 <Settings className="mr-2 h-4 w-4" />
                 View Controls
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
                   Camera Height: {cameraHeight[0]}m
                 </label>
                 <Slider
@@ -514,7 +512,7 @@ const OpenPitMine3D = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Display Options</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Display Options</label>
                 <div className="space-y-1">
                   <Button
                     variant={showPersonnel ? "default" : "outline"}
@@ -539,26 +537,26 @@ const OpenPitMine3D = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="text-sm">Clean Design</CardTitle>
+              <CardTitle className="text-sm text-gray-900 dark:text-gray-100">Mine Statistics</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2 text-xs">
+              <div className="space-y-2 text-xs text-gray-600 dark:text-gray-400">
                 <div className="flex items-center justify-between">
-                  <span>✅ No ground slab</span>
+                  <span>✅ Real-time data</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>✅ Surface level start</span>
+                  <span>✅ Personnel tracking</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>✅ Clean pit edges</span>
+                  <span>✅ Equipment status</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>✅ Realistic structure</span>
+                  <span>✅ Safety zones</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>✅ Proper benches</span>
+                  <span>✅ Risk assessment</span>
                 </div>
               </div>
             </CardContent>

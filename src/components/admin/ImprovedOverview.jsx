@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import * as d3 from 'd3';
@@ -10,6 +11,8 @@ import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
 import { Alert, AlertDescription } from '../ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Input } from '../ui/input';
 import {
   AlertTriangle,
   TrendingUp,
@@ -24,8 +27,17 @@ import {
   Brain,
   Eye,
   Clock,
-  MapPin
+  MapPin,
+  Search,
+  ChevronDown,
+  AlertCircle,
+  BarChart3
 } from 'lucide-react';
+import { useMine } from '../../contexts/MineContext';
+import { useTheme } from '../../contexts/ThemeContext';
+import MineSelector from '../MineSelector';
+import ThemeToggle from '../ThemeToggle';
+import PageHeader from '../PageHeader';
 import {
   LineChart,
   Line,
@@ -51,8 +63,11 @@ const ImprovedOverview = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isLoading, setIsLoading] = useState(false);
 
-  // Generate realistic open pit mine heatmap data (optimized)
-  const generateMineHeatmapData = useCallback(() => {
+  // Use global mine context
+  const { selectedMine, currentMine, criticalMines, handleMineSelection } = useMine();
+
+  // Generate dynamic heatmap data based on selected mine
+  const heatmapData = useMemo(() => {
     const width = 400;
     const height = 300;
     const data = [];
@@ -74,12 +89,17 @@ const ImprovedOverview = () => {
           const centerDistance = Math.sqrt(nx * nx + ny * ny);
           const baseRisk = 0.2 + centerDistance * 0.6; // Higher risk near edges
 
-          // Add deterministic hotspots (remove random for consistency)
-          const hotspot1 = Math.exp(-50 * ((nx - 0.3) ** 2 + (ny - 0.2) ** 2)); // High risk zone
-          const hotspot2 = Math.exp(-30 * ((nx + 0.2) ** 2 + (ny + 0.4) ** 2)); // Medium risk zone
-          const hotspot3 = Math.exp(-40 * ((nx + 0.1) ** 2 + (ny - 0.3) ** 2)); // Additional risk zone
+          // Use mine-specific hotspots
+          let riskValue = baseRisk;
+          if (currentMine.heatmapData && currentMine.heatmapData.hotspots) {
+            currentMine.heatmapData.hotspots.forEach(hotspot => {
+              const distance = Math.sqrt((x - hotspot.x) ** 2 + (y - hotspot.y) ** 2);
+              const influence = hotspot.intensity * Math.exp(-distance / 50);
+              riskValue += influence;
+            });
+          }
 
-          const riskValue = Math.max(0, Math.min(1, baseRisk + hotspot1 * 0.7 + hotspot2 * 0.4 + hotspot3 * 0.3));
+          riskValue = Math.max(0, Math.min(1, riskValue));
 
           data.push({
             x: x,
@@ -92,10 +112,7 @@ const ImprovedOverview = () => {
     }
 
     return data;
-  }, []);
-
-  // Memoize the heatmap data generation for better performance
-  const heatmapData = useMemo(() => generateMineHeatmapData(), [generateMineHeatmapData]);
+  }, [selectedMine, currentMine]); // Re-generate when mine changes
 
   // Handle emergency evacuation function
   const handleEmergencyEvacuation = useCallback(() => {
@@ -216,25 +233,11 @@ const ImprovedOverview = () => {
     }
   ];
 
-  // Risk prediction data for the next 24 hours
-  const riskPredictionData = [
-    { time: '00:00', overall: 45, crack: 38, displacement: 32, weather: 25 },
-    { time: '02:00', overall: 48, crack: 42, displacement: 35, weather: 28 },
-    { time: '04:00', overall: 52, crack: 45, displacement: 38, weather: 32 },
-    { time: '06:00', overall: 58, crack: 52, displacement: 42, weather: 38 },
-    { time: '08:00', overall: 62, crack: 58, displacement: 48, weather: 42 },
-    { time: '10:00', overall: 68, crack: 65, displacement: 52, weather: 48 },
-    { time: '12:00', overall: 72, crack: 68, displacement: 58, weather: 52 },
-    { time: '14:00', overall: 75, crack: 72, displacement: 62, weather: 55 },
-    { time: '16:00', overall: 78, crack: 75, displacement: 65, weather: 58 },
-    { time: '18:00', overall: 82, crack: 78, displacement: 68, weather: 62 },
-    { time: '20:00', overall: 85, crack: 82, displacement: 72, weather: 65 },
-    { time: '22:00', overall: 88, crack: 85, displacement: 75, weather: 68 },
-    { time: '24:00', overall: 92, crack: 88, displacement: 78, weather: 72 }
-  ];
+  // Use mine-specific risk prediction data
+  const riskPredictionData = currentMine.timelineData || [];
 
   // D3 Heatmap Component (optimized and improved)
-  const D3Heatmap = ({ data, width = 400, height = 300 }) => {
+  const D3Heatmap = React.memo(({ data, width = 400, height = 300 }) => {
     const svgRef = useRef();
 
     useEffect(() => {
@@ -361,118 +364,132 @@ const ImprovedOverview = () => {
         className="border-2 border-gray-300 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 shadow-inner"
       />
     );
-  };
+  });
 
   const criticalAlerts = mockAlerts.filter(alert => alert.priority === 'critical').length;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              System Overview
-            </h1>
-            <p className="text-gray-600 mt-1">Real-time mine safety monitoring dashboard</p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="text-right">
-              <p className="text-sm text-gray-500">Last Updated</p>
-              <p className="font-mono text-sm font-semibold text-green-600">{currentTime.toLocaleTimeString()}</p>
-            </div>
-            <Button
-              onClick={handleEmergencyEvacuation}
-              disabled={isLoading}
-              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 px-6 transform hover:scale-105 transition-all duration-200"
-            >
-              {isLoading ? (
-                <div className="flex items-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Initiating...
-                </div>
-              ) : (
-                <>
-                  <AlertTriangle className="mr-2 h-4 w-4" />
-                  Emergency Evacuation
-                </>
-              )}
-            </Button>
-          </div>
+      <PageHeader
+        title={`System Overview - ${currentMine.name}`}
+        description="Real-time mine safety monitoring dashboard"
+        icon={BarChart3}
+        showMineSelector={true}
+        showThemeToggle={true}
+      >
+        <div className="flex items-center space-x-2">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <span className="text-xs text-green-600 dark:text-green-400 font-medium">Live Data</span>
         </div>
-      </div>
+        <div className="text-right">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Last Updated</p>
+          <p className="font-mono text-sm font-semibold text-green-600 dark:text-green-400">{currentTime.toLocaleTimeString()}</p>
+        </div>
+        <Button
+          onClick={handleEmergencyEvacuation}
+          disabled={isLoading}
+          className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 px-6 transform hover:scale-105 transition-all duration-200"
+        >
+          {isLoading ? (
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Initiating...
+            </div>
+          ) : (
+            <>
+              <AlertTriangle className="mr-2 h-4 w-4" />
+              Emergency Evacuation
+            </>
+          )}
+        </Button>
+      </PageHeader>
 
       {/* Critical Metrics Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Overall Risk */}
-        <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
+        <Card className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-orange-200 dark:border-orange-800">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-orange-600">Overall Risk</p>
+                <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Overall Risk</p>
                 <div className="flex items-center mt-2">
-                  <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1 rounded-full text-lg font-bold">
-                    MEDIUM
+                  <div className={`bg-gradient-to-r text-white px-3 py-1 rounded-full text-lg font-bold ${currentMine.riskLevel === 'Critical' ? 'from-red-500 to-red-700' :
+                    currentMine.riskLevel === 'High' ? 'from-orange-500 to-red-500' :
+                      currentMine.riskLevel === 'Medium' ? 'from-yellow-500 to-orange-500' : 'from-green-500 to-green-700'
+                    }`}>
+                    {currentMine.riskLevel.toUpperCase()}
                   </div>
                 </div>
               </div>
-              <Shield className="h-8 w-8 text-orange-500" />
+              <Shield className={`h-8 w-8 ${currentMine.riskLevel === 'Critical' ? 'text-red-500' :
+                currentMine.riskLevel === 'High' ? 'text-orange-500' :
+                  currentMine.riskLevel === 'Medium' ? 'text-yellow-500' : 'text-green-500'
+                }`} />
             </div>
             <div className="mt-4">
-              <Progress value={65} className="h-2" />
-              <p className="text-xs text-orange-600 mt-1">Risk Level: 65%</p>
+              <Progress value={
+                currentMine.riskLevel === 'Critical' ? 95 :
+                  currentMine.riskLevel === 'High' ? 80 :
+                    currentMine.riskLevel === 'Medium' ? 65 : 30
+              } className="h-2" />
+              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">Risk Level: {
+                currentMine.riskLevel === 'Critical' ? '95%' :
+                  currentMine.riskLevel === 'High' ? '80%' :
+                    currentMine.riskLevel === 'Medium' ? '65%' : '30%'
+              }</p>
             </div>
           </CardContent>
         </Card>
 
         {/* Active Sensors */}
-        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-green-600">Active Sensors</p>
+                <p className="text-sm font-medium text-green-600 dark:text-green-400">Active Sensors</p>
                 <div className="flex items-center mt-2">
-                  <span className="text-2xl font-bold text-green-700">{mockSystemStatus.activeSensors}</span>
-                  <span className="text-gray-500 ml-1">/{mockSystemStatus.totalSensors}</span>
+                  <span className="text-2xl font-bold text-green-700 dark:text-green-300">{currentMine.sensors.active}</span>
+                  <span className="text-gray-500 dark:text-gray-400 ml-1">/{currentMine.sensors.total}</span>
                 </div>
               </div>
               <Activity className="h-8 w-8 text-green-500" />
             </div>
             <div className="mt-4">
-              <Progress value={98} className="h-2" />
-              <p className="text-xs text-green-600 mt-1">98% Operational</p>
+              <Progress value={Math.round((currentMine.sensors.active / currentMine.sensors.total) * 100)} className="h-2" />
+              <p className="text-xs text-green-600 dark:text-green-400 mt-1">{Math.round((currentMine.sensors.active / currentMine.sensors.total) * 100)}% Operational</p>
             </div>
           </CardContent>
         </Card>
 
         {/* Personnel */}
-        <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
+        <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-blue-200 dark:border-blue-800">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-600">Personnel Online</p>
+                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Personnel Online</p>
                 <div className="flex items-center mt-2">
-                  <span className="text-2xl font-bold text-blue-700">{mockPersonnel.online}</span>
-                  <span className="text-gray-500 ml-1">/{mockPersonnel.total}</span>
+                  <span className="text-2xl font-bold text-blue-700 dark:text-blue-300">{Math.round(currentMine.personnel * 0.9)}</span>
+                  <span className="text-gray-500 dark:text-gray-400 ml-1">/{currentMine.personnel}</span>
                 </div>
               </div>
               <Users className="h-8 w-8 text-blue-500" />
             </div>
             <div className="mt-4">
               <Progress value={90} className="h-2" />
-              <p className="text-xs text-blue-600 mt-1">90% Present</p>
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">90% Present</p>
             </div>
           </CardContent>
         </Card>
 
         {/* Critical Alerts */}
-        <Card className="bg-gradient-to-br from-red-50 to-pink-50 border-red-200">
+        <Card className="bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border-red-200 dark:border-red-800">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-red-600">Critical Alerts</p>
+                <p className="text-sm font-medium text-red-600 dark:text-red-400">Critical Alerts</p>
                 <div className="flex items-center mt-2">
-                  <span className="text-2xl font-bold text-red-700">{criticalAlerts}</span>
+                  <span className="text-2xl font-bold text-red-700 dark:text-red-300">{currentMine.alerts}</span>
                   <TrendingUp className="h-4 w-4 text-red-500 ml-2" />
                 </div>
               </div>
@@ -480,21 +497,77 @@ const ImprovedOverview = () => {
             </div>
             <div className="mt-4">
               <Badge variant="destructive" className="text-xs">
-                Requires Attention
+                {currentMine.alerts > 5 ? 'High Priority' : 'Requires Attention'}
               </Badge>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Risk Prediction Over Time */}
-      <Card>
+      {/* Critical Mines Alert Section */}
+      <Card className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-red-200 dark:border-red-800">
         <CardHeader>
-          <CardTitle className="flex items-center">
-            <TrendingUp className="mr-2 h-5 w-5 text-blue-600" />
+          <CardTitle className="flex items-center text-red-700 dark:text-red-400">
+            <AlertTriangle className="mr-2 h-5 w-5" />
+            Critical Mines Requiring Attention
+          </CardTitle>
+          <CardDescription className="dark:text-gray-400">Mines with high risk levels that need immediate monitoring</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {criticalMines.map((mine) => (
+              <div
+                key={mine.id}
+                className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${selectedMine === mine.id
+                  ? 'border-red-500 bg-red-100 dark:bg-red-900/30'
+                  : 'border-red-200 dark:border-red-700 bg-white dark:bg-gray-800 hover:border-red-300 dark:hover:border-red-600'
+                  }`}
+                onClick={() => handleMineSelection(mine.id)}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full ${mine.riskLevel === 'Critical' ? 'bg-red-500 animate-pulse' :
+                      mine.riskLevel === 'High' ? 'bg-orange-500' : 'bg-yellow-500'
+                      }`}></div>
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-200">{mine.name}</h3>
+                  </div>
+                  <Badge variant="destructive" className="text-xs">
+                    {mine.riskLevel}
+                  </Badge>
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                  <div className="flex items-center">
+                    <MapPin className="h-3 w-3 mr-1" />
+                    {mine.location}
+                  </div>
+                  <div className="flex items-center">
+                    <Users className="h-3 w-3 mr-1" />
+                    {mine.personnel} Personnel
+                  </div>
+                  <div className="flex items-center">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    {mine.alerts} Active Alerts
+                  </div>
+                </div>
+                {selectedMine === mine.id && (
+                  <div className="mt-2 text-xs text-red-600 dark:text-red-400 font-medium">
+                    Currently Selected
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Risk Prediction Over Time */}
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+        <CardHeader>
+          <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
+            <TrendingUp className="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400" />
             Risk Prediction Timeline - Next 24 Hours
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-gray-600 dark:text-gray-400">
             AI-powered risk predictions across all categories with real-time analysis
           </CardDescription>
         </CardHeader>
@@ -575,16 +648,16 @@ const ImprovedOverview = () => {
       {/* Main Dashboard Grid - Map 70% and Card 30% */}
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
         {/* Interactive India Mining Sites Map - 70% */}
-        <Card className="lg:col-span-7 overflow-hidden">
+        <Card className="lg:col-span-7 overflow-hidden bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Activity className="mr-2 h-5 w-5 text-blue-600" />
+            <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
+              <Activity className="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400" />
               Mining Sites Across India
             </CardTitle>
-            <CardDescription>Interactive map showing our active mining operations with real-time status</CardDescription>
+            <CardDescription className="text-gray-600 dark:text-gray-400">Interactive map showing our active mining operations with real-time status</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="relative w-full h-[700px] bg-gradient-to-br from-blue-50 to-indigo-50">
+            <div className="relative w-full h-[700px] bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900">
               <MapContainer
                 center={[20.5937, 78.9629]} // Center of India
                 zoom={5.5}
@@ -615,9 +688,9 @@ const ImprovedOverview = () => {
                       icon={customIcon}
                     >
                       <Popup className="custom-popup">
-                        <div className="p-3 min-w-[220px] bg-white rounded-lg">
+                        <div className="p-3 min-w-[220px] bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                           <div className="flex items-center justify-between mb-3">
-                            <h3 className="font-bold text-lg text-gray-800">{site.name}</h3>
+                            <h3 className="font-bold text-lg text-gray-800 dark:text-gray-200">{site.name}</h3>
                             <div className={`px-2 py-1 rounded-full text-xs font-semibold ${site.risk >= 80 ? 'bg-red-100 text-red-800' :
                               site.risk >= 60 ? 'bg-orange-100 text-orange-800' :
                                 'bg-green-100 text-green-800'
@@ -629,14 +702,14 @@ const ImprovedOverview = () => {
 
                           <div className="space-y-2 text-sm">
                             <div className="flex items-center justify-between">
-                              <span className="flex items-center text-gray-600">
+                              <span className="flex items-center text-gray-600 dark:text-gray-400">
                                 <span className="mr-2">📍</span> State:
                               </span>
-                              <span className="font-medium text-gray-800">{site.state}</span>
+                              <span className="font-medium text-gray-800 dark:text-gray-200">{site.state}</span>
                             </div>
 
                             <div className="flex items-center justify-between">
-                              <span className="flex items-center text-gray-600">
+                              <span className="flex items-center text-gray-600 dark:text-gray-400">
                                 <span className="mr-2">⚡</span> Status:
                               </span>
                               <span className={`font-medium ${site.statusColor === 'red' ? 'text-red-600' :
@@ -646,14 +719,14 @@ const ImprovedOverview = () => {
                             </div>
 
                             <div className="flex items-center justify-between">
-                              <span className="flex items-center text-gray-600">
+                              <span className="flex items-center text-gray-600 dark:text-gray-400">
                                 <span className="mr-2">👥</span> Workers:
                               </span>
-                              <span className="font-medium text-gray-800">{site.workers}</span>
+                              <span className="font-medium text-gray-800 dark:text-gray-200">{site.workers}</span>
                             </div>
 
                             <div className="flex items-center justify-between">
-                              <span className="flex items-center text-gray-600">
+                              <span className="flex items-center text-gray-600 dark:text-gray-400">
                                 <span className="mr-2">🚨</span> Risk Level:
                               </span>
                               <div className="flex items-center space-x-2">
@@ -661,7 +734,7 @@ const ImprovedOverview = () => {
                                   site.risk >= 60 ? 'text-orange-600' :
                                     'text-green-600'
                                   }`}>{site.risk}%</span>
-                                <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div className="w-16 h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                                   <div
                                     className={`h-full transition-all duration-300 ${site.risk >= 80 ? 'bg-red-500' :
                                       site.risk >= 60 ? 'bg-orange-500' :
@@ -674,8 +747,8 @@ const ImprovedOverview = () => {
                             </div>
                           </div>
 
-                          <div className="mt-3 pt-3 border-t border-gray-200">
-                            <div className="flex items-center text-xs text-gray-500">
+                          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                            <div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
                               <span className="mr-1">📊</span>
                               Last updated: {currentTime.toLocaleTimeString()}
                             </div>
@@ -691,79 +764,79 @@ const ImprovedOverview = () => {
         </Card>
 
         {/* Operations Summary Panel - 30% */}
-        <Card className="lg:col-span-3 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+        <Card className="lg:col-span-3 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 border-blue-200 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Activity className="mr-2 h-5 w-5 text-blue-600" />
+            <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
+              <Activity className="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400" />
               Operations Summary
             </CardTitle>
-            <CardDescription>Real-time mining operations overview</CardDescription>
+            <CardDescription className="text-gray-600 dark:text-gray-400">Real-time mining operations overview</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Main Stats */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div className="text-2xl font-bold text-blue-700">{miningSites.length}</div>
-                <div className="text-sm text-blue-600">Total Sites</div>
+              <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="text-2xl font-bold text-blue-700 dark:text-blue-400">{miningSites.length}</div>
+                <div className="text-sm text-blue-600 dark:text-blue-300">Total Sites</div>
               </div>
-              <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
-                <div className="text-2xl font-bold text-green-700">{miningSites.reduce((sum, site) => sum + site.workers, 0)}</div>
-                <div className="text-sm text-green-600">Total Workers</div>
+              <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                <div className="text-2xl font-bold text-green-700 dark:text-green-400">{miningSites.reduce((sum, site) => sum + site.workers, 0)}</div>
+                <div className="text-sm text-green-600 dark:text-green-300">Total Workers</div>
               </div>
             </div>
 
-            <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+            <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-orange-600">Average Risk Level:</span>
-                <span className="text-xl font-bold text-orange-700">
+                <span className="text-sm text-orange-600 dark:text-orange-300">Average Risk Level:</span>
+                <span className="text-xl font-bold text-orange-700 dark:text-orange-400">
                   {Math.round(miningSites.reduce((sum, site) => sum + site.risk, 0) / miningSites.length)}%
                 </span>
               </div>
             </div>
 
             {/* Status Legend */}
-            <div className="p-3 bg-white rounded-lg border border-gray-200">
-              <div className="text-sm font-medium text-gray-700 mb-3">Status Legend</div>
+            <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Status Legend</div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span className="text-sm text-gray-700">Critical</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Critical</span>
                   </div>
-                  <span className="text-xs text-gray-500">80%+</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">80%+</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                    <span className="text-sm text-gray-700">Warning</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Warning</span>
                   </div>
-                  <span className="text-xs text-gray-500">60-80%</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">60-80%</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-sm text-gray-700">Normal</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Normal</span>
                   </div>
-                  <span className="text-xs text-gray-500">Low Risk</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Low Risk</span>
                 </div>
               </div>
             </div>
 
             {/* System Status */}
-            <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-              <div className="text-sm font-medium text-green-800 mb-2">System Health</div>
+            <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+              <div className="text-sm font-medium text-green-800 dark:text-green-300 mb-2">System Health</div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-green-700">Active Sensors:</span>
-                  <span className="font-semibold text-green-800">{mockSystemStatus.activeSensors}/{mockSystemStatus.totalSensors}</span>
+                  <span className="text-sm text-green-700 dark:text-green-300">Active Sensors:</span>
+                  <span className="font-semibold text-green-800 dark:text-green-200">{mockSystemStatus.activeSensors}/{mockSystemStatus.totalSensors}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-green-700">Personnel Online:</span>
-                  <span className="font-semibold text-green-800">{mockPersonnel.online}/{mockPersonnel.total}</span>
+                  <span className="text-sm text-green-700 dark:text-green-300">Personnel Online:</span>
+                  <span className="font-semibold text-green-800 dark:text-green-200">{mockPersonnel.online}/{mockPersonnel.total}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-green-700">Critical Alerts:</span>
-                  <span className="font-semibold text-red-700">{criticalAlerts}</span>
+                  <span className="text-sm text-green-700 dark:text-green-300">Critical Alerts:</span>
+                  <span className="font-semibold text-red-700 dark:text-red-400">{criticalAlerts}</span>
                 </div>
               </div>
             </div>
@@ -793,56 +866,79 @@ const ImprovedOverview = () => {
       {/* Full Width Section Below */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Open Pit Mine Risk Heatmap */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 dark:bg-gray-800 dark:border-gray-700">
           <CardHeader>
-            <CardTitle className="flex items-center">
+            <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
               <Activity className="mr-2 h-5 w-5" />
               Open Pit Mine Risk Heatmap
             </CardTitle>
-            <CardDescription>Real-time risk visualization for Karimnagar mining operations</CardDescription>
+            <CardDescription className="dark:text-gray-400">Real-time risk visualization for {currentMine.name} mining operations</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="relative w-full h-[500px] bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl overflow-hidden border-2 border-amber-200 flex items-center justify-center">
+            <div className="relative w-full h-[500px] bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-xl overflow-hidden border-2 border-amber-200 dark:border-amber-700 flex items-center justify-center">
 
               {/* D3 Heatmap - Centered */}
               <div className="flex items-center justify-center w-full h-full">
-                <D3Heatmap data={heatmapData} width={500} height={400} />
+                <D3Heatmap key="static-heatmap" data={heatmapData} width={500} height={400} />
               </div>
 
               {/* Risk Legend */}
-              <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg p-2 border border-gray-300">
-                <div className="text-gray-800 text-xs font-semibold mb-1">Risk Level</div>
+              <div className="absolute bottom-4 right-4 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg p-2 border border-gray-300 dark:border-gray-600">
+                <div className="text-gray-800 dark:text-gray-200 text-xs font-semibold mb-1">Risk Level</div>
                 <div className="flex flex-col space-y-1">
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-2 rounded" style={{ backgroundColor: '#f5f5dc' }}></div>
-                    <span className="text-gray-700 text-xs">Very Low</span>
+                    <span className="text-gray-700 dark:text-gray-300 text-xs">Very Low</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-2 rounded" style={{ backgroundColor: '#deb887' }}></div>
-                    <span className="text-gray-700 text-xs">Low</span>
+                    <span className="text-gray-700 dark:text-gray-300 text-xs">Low</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-2 rounded" style={{ backgroundColor: '#cd853f' }}></div>
-                    <span className="text-gray-700 text-xs">Medium</span>
+                    <span className="text-gray-700 dark:text-gray-300 text-xs">Medium</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-2 rounded" style={{ backgroundColor: '#a0522d' }}></div>
-                    <span className="text-gray-700 text-xs">High</span>
+                    <span className="text-gray-700 dark:text-gray-300 text-xs">High</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <div className="w-3 h-2 rounded" style={{ backgroundColor: '#8b4513' }}></div>
-                    <span className="text-gray-700 text-xs">Critical</span>
+                    <span className="text-gray-700 dark:text-gray-300 text-xs">Critical</span>
                   </div>
                 </div>
               </div>
 
               {/* Mine Information */}
-              <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg p-2 border border-gray-300">
-                <div className="text-gray-800 text-sm font-semibold">Karimnagar Mine</div>
-                <div className="text-gray-700 text-xs mt-1">
-                  <div>📍 Telangana</div>
-                  <div>⚡ Active</div>
-                  <div>👥 150 Workers</div>
+              <div className="absolute top-4 left-4 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm rounded-lg p-3 border border-gray-300 dark:border-gray-600 shadow-lg">
+                <div className="text-gray-800 dark:text-gray-200 text-sm font-semibold flex items-center">
+                  <div className={`w-2 h-2 rounded-full mr-2 ${currentMine.riskLevel === 'Critical' ? 'bg-red-500 animate-pulse' :
+                    currentMine.riskLevel === 'High' ? 'bg-orange-500' :
+                      currentMine.riskLevel === 'Medium' ? 'bg-yellow-500' : 'bg-green-500'
+                    }`}></div>
+                  <MapPin className="h-4 w-4 mr-1 text-red-500" />
+                  {currentMine.name}
+                </div>
+                <div className="text-gray-700 dark:text-gray-300 text-xs mt-2 space-y-1">
+                  <div className="flex items-center">
+                    <MapPin className="h-3 w-3 mr-1 text-red-500" />
+                    <span className="font-medium">{currentMine.location}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Zap className="h-3 w-3 mr-1 text-green-500" />
+                    <span className={`font-medium ${currentMine.status === 'Critical' ? 'text-red-600 dark:text-red-400' :
+                      currentMine.status === 'Active' ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'
+                      }`}>{currentMine.status}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Users className="h-3 w-3 mr-1 text-blue-500" />
+                    <span className="font-medium">{currentMine.personnel} Workers</span>
+                  </div>
+                  <div className="flex items-center">
+                    <AlertCircle className="h-3 w-3 mr-1 text-orange-500" />
+                    <span className={`font-medium ${currentMine.alerts > 5 ? 'text-red-600 dark:text-red-400' : 'text-orange-600 dark:text-orange-400'
+                      }`}>{currentMine.alerts} Alerts</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -852,78 +948,78 @@ const ImprovedOverview = () => {
         {/* AI Predictions & Weather */}
         <div className="space-y-6">
           {/* AI Predictions */}
-          <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200">
+          <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-purple-200 dark:border-purple-800">
             <CardHeader>
-              <CardTitle className="flex items-center text-purple-700">
+              <CardTitle className="flex items-center text-purple-700 dark:text-purple-400">
                 <Brain className="mr-2 h-5 w-5" />
                 AI Predictions
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="p-3 bg-white rounded-lg shadow-sm">
+              <div className="p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Risk Trend</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Risk Trend</span>
                   <TrendingUp className="h-4 w-4 text-orange-500" />
                 </div>
-                <div className="text-xl font-bold text-orange-600">+12%</div>
-                <div className="text-xs text-gray-600">Next 4 hours</div>
+                <div className="text-xl font-bold text-orange-600 dark:text-orange-400">+12%</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">Next 4 hours</div>
               </div>
 
-              <div className="p-3 bg-white rounded-lg shadow-sm">
+              <div className="p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Anomaly Detection</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Anomaly Detection</span>
                   <Eye className="h-4 w-4 text-blue-500" />
                 </div>
-                <div className="text-xl font-bold text-blue-600">2</div>
-                <div className="text-xs text-gray-600">Sectors flagged</div>
+                <div className="text-xl font-bold text-blue-600 dark:text-blue-400">2</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">Sectors flagged</div>
               </div>
 
-              <div className="p-3 bg-white rounded-lg shadow-sm">
+              <div className="p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border dark:border-gray-700">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Confidence</span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Confidence</span>
                   <Shield className="h-4 w-4 text-green-500" />
                 </div>
-                <div className="text-xl font-bold text-green-600">94%</div>
-                <div className="text-xs text-gray-600">Model accuracy</div>
+                <div className="text-xl font-bold text-green-600 dark:text-green-400">94%</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">Model accuracy</div>
               </div>
             </CardContent>
           </Card>
 
           {/* Weather Impact */}
-          <Card>
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
                 <Droplets className="mr-2 h-5 w-5" />
                 Weather Impact
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                   <Droplets className="h-6 w-6 text-blue-500 mx-auto mb-2" />
-                  <div className="font-bold text-blue-700">{mockWeatherData.rainfall}mm</div>
-                  <div className="text-xs text-blue-600">Rainfall</div>
+                  <div className="font-bold text-blue-700 dark:text-blue-400">{mockWeatherData.rainfall}mm</div>
+                  <div className="text-xs text-blue-600 dark:text-blue-400">Rainfall</div>
                 </div>
-                <div className="text-center p-3 bg-orange-50 rounded-lg">
+                <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
                   <Thermometer className="h-6 w-6 text-orange-500 mx-auto mb-2" />
-                  <div className="font-bold text-orange-700">{mockWeatherData.temperature}°C</div>
-                  <div className="text-xs text-orange-600">Temperature</div>
+                  <div className="font-bold text-orange-700 dark:text-orange-400">{mockWeatherData.temperature}°C</div>
+                  <div className="text-xs text-orange-600 dark:text-orange-400">Temperature</div>
                 </div>
               </div>
 
-              <div className="p-3 bg-yellow-50 rounded-lg">
+              <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                 <div className="flex items-center mb-2">
-                  <Wind className="h-4 w-4 text-yellow-600 mr-2" />
-                  <span className="text-sm font-medium">Wind</span>
+                  <Wind className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mr-2" />
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Wind</span>
                 </div>
-                <div className="text-lg font-bold text-yellow-700">
+                <div className="text-lg font-bold text-yellow-700 dark:text-yellow-400">
                   {mockWeatherData.windSpeed} km/h {mockWeatherData.windDirection}
                 </div>
               </div>
 
-              <Alert className="border-amber-200 bg-amber-50">
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
-                <AlertDescription className="text-amber-800">
+              <Alert className="border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20">
+                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <AlertDescription className="text-amber-800 dark:text-amber-300">
                   High rainfall detected. Increased monitoring recommended.
                 </AlertDescription>
               </Alert>
@@ -933,34 +1029,34 @@ const ImprovedOverview = () => {
       </div>
 
       {/* Sensor Status Grid */}
-      <Card>
+      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
         <CardHeader>
-          <CardTitle className="flex items-center">
+          <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
             <Zap className="mr-2 h-5 w-5" />
             Live Sensor Network Status
           </CardTitle>
-          <CardDescription>Real-time monitoring of all sensor systems</CardDescription>
+          <CardDescription className="text-gray-600 dark:text-gray-400">Real-time monitoring of all sensor systems</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {Object.entries(mockSensorData).map(([sensor, data]) => (
               <div
                 key={sensor}
-                className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border"
+                className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl border border-gray-200 dark:border-gray-600"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <div className="font-semibold capitalize text-gray-800">{sensor}</div>
+                  <div className="font-semibold capitalize text-gray-800 dark:text-gray-200">{sensor}</div>
                   <Badge className={getRiskColor(data.status)}>
                     {data.status.toUpperCase()}
                   </Badge>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Current</span>
-                    <span className="font-bold">{data.current}/{data.max}</span>
+                    <span className="text-gray-700 dark:text-gray-300">Current</span>
+                    <span className="font-bold text-gray-900 dark:text-gray-100">{data.current}/{data.max}</span>
                   </div>
                   <Progress value={data.percentage} className="h-3" />
-                  <div className="text-xs text-gray-600">{data.percentage}% of threshold</div>
+                  <div className="text-xs text-gray-600 dark:text-gray-400">{data.percentage}% of threshold</div>
                 </div>
               </div>
             ))}

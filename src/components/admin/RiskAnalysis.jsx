@@ -3,6 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { useMine } from '../../contexts/MineContext';
+import { useTheme } from '../../contexts/ThemeContext';
+import PageHeader from '../PageHeader';
 import {
   TrendingUp,
   BarChart3,
@@ -41,8 +44,20 @@ const RiskAnalysis = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState('7d');
   const [selectedSector, setSelectedSector] = useState('all');
 
-  // Historical risk data
-  const riskTrendData = [
+  // Use global mine context
+  const { currentMine } = useMine();
+
+  // Get mine-specific risk data
+  const mineRiskData = currentMine.timelineData || [];
+
+  // Historical risk data - using mine-specific timeline data
+  const riskTrendData = mineRiskData.length > 0 ? mineRiskData.map((data, index) => ({
+    date: `2025-01-${17 + index}`,
+    overall: data.overall,
+    structural: data.crack,
+    environmental: data.weather,
+    operational: data.displacement
+  })) : [
     { date: '2025-01-17', overall: 25, structural: 30, environmental: 20, operational: 25 },
     { date: '2025-01-18', overall: 28, structural: 32, environmental: 24, operational: 28 },
     { date: '2025-01-19', overall: 35, structural: 40, environmental: 30, operational: 35 },
@@ -110,43 +125,39 @@ const RiskAnalysis = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">Risk Analysis</h1>
-            <p className="text-gray-600 mt-1">Comprehensive risk assessment and trend analysis</p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <select
-              value={selectedTimeRange}
-              onChange={(e) => setSelectedTimeRange(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-            >
-              {timeRangeOptions.map(option => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-            <Button className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700">
-              <BarChart3 className="mr-2 h-4 w-4" />
-              Generate Report
-            </Button>
-          </div>
+    <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900">
+      <PageHeader
+        title="Risk Analysis"
+        description="Comprehensive risk assessment and trend analysis"
+      >
+        <div className="flex items-center space-x-4">
+          <select
+            value={selectedTimeRange}
+            onChange={(e) => setSelectedTimeRange(e.target.value)}
+            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          >
+            {timeRangeOptions.map(option => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+          <Button className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700">
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Generate Report
+          </Button>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+        <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-red-200 dark:border-red-800">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-red-600">Critical Risk Level</p>
-                <div className="text-2xl font-bold text-red-700 mt-2">68%</div>
+                <p className="text-sm font-medium text-red-600 dark:text-red-400">Critical Risk Level</p>
+                <div className="text-2xl font-bold text-red-700 dark:text-red-300 mt-2">68%</div>
                 <div className="flex items-center mt-1">
                   <TrendingUp className="h-3 w-3 text-red-500 mr-1" />
-                  <span className="text-xs text-red-600">+15% from last week</span>
+                  <span className="text-xs text-red-600 dark:text-red-400">+15% from last week</span>
                 </div>
               </div>
               <AlertTriangle className="h-8 w-8 text-red-500" />
@@ -154,15 +165,15 @@ const RiskAnalysis = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
+        <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20 border-amber-200 dark:border-amber-800">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-amber-600">High-Risk Sectors</p>
-                <div className="text-2xl font-bold text-amber-700 mt-2">3</div>
+                <p className="text-sm font-medium text-amber-600 dark:text-amber-400">High-Risk Sectors</p>
+                <div className="text-2xl font-bold text-amber-700 dark:text-amber-300 mt-2">3</div>
                 <div className="flex items-center mt-1">
                   <Target className="h-3 w-3 text-amber-500 mr-1" />
-                  <span className="text-xs text-amber-600">B-12, A-5, B-15</span>
+                  <span className="text-xs text-amber-600 dark:text-amber-400">B-12, A-5, B-15</span>
                 </div>
               </div>
               <Target className="h-8 w-8 text-amber-500" />
@@ -170,15 +181,15 @@ const RiskAnalysis = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-600">Prediction Accuracy</p>
-                <div className="text-2xl font-bold text-blue-700 mt-2">94.2%</div>
+                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Prediction Accuracy</p>
+                <div className="text-2xl font-bold text-blue-700 dark:text-blue-300 mt-2">94.2%</div>
                 <div className="flex items-center mt-1">
                   <Activity className="h-3 w-3 text-blue-500 mr-1" />
-                  <span className="text-xs text-blue-600">AI Model Performance</span>
+                  <span className="text-xs text-blue-600 dark:text-blue-400">AI Model Performance</span>
                 </div>
               </div>
               <Activity className="h-8 w-8 text-blue-500" />
@@ -186,15 +197,15 @@ const RiskAnalysis = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-800">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-purple-600">Risk Events</p>
-                <div className="text-2xl font-bold text-purple-700 mt-2">19</div>
+                <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Risk Events</p>
+                <div className="text-2xl font-bold text-purple-700 dark:text-purple-300 mt-2">19</div>
                 <div className="flex items-center mt-1">
                   <Clock className="h-3 w-3 text-purple-500 mr-1" />
-                  <span className="text-xs text-purple-600">Last 7 days</span>
+                  <span className="text-xs text-purple-600 dark:text-purple-400">Last 7 days</span>
                 </div>
               </div>
               <Clock className="h-8 w-8 text-purple-500" />
@@ -204,7 +215,7 @@ const RiskAnalysis = () => {
       </div>
 
       <Tabs defaultValue="trends" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-4 bg-gray-100 dark:bg-gray-800">
           <TabsTrigger value="trends">Risk Trends</TabsTrigger>
           <TabsTrigger value="factors">Risk Factors</TabsTrigger>
           <TabsTrigger value="sectors">Sector Analysis</TabsTrigger>
@@ -213,13 +224,13 @@ const RiskAnalysis = () => {
 
         <TabsContent value="trends" className="space-y-6">
           {/* Risk Trend Chart */}
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
                 <TrendingUp className="mr-2 h-5 w-5" />
                 Risk Trend Analysis - {selectedTimeRange.toUpperCase()}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-gray-600 dark:text-gray-400">
                 Historical risk progression across different categories
               </CardDescription>
             </CardHeader>
@@ -230,10 +241,10 @@ const RiskAnalysis = () => {
                     <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                     <XAxis dataKey="date" />
                     <YAxis domain={[0, 100]} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
-                        border: '1px solid #e5e7eb', 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e5e7eb',
                         borderRadius: '8px',
                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                       }}
@@ -273,9 +284,9 @@ const RiskAnalysis = () => {
 
           {/* Risk Distribution */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <CardHeader>
-                <CardTitle className="flex items-center">
+                <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
                   <PieChart className="mr-2 h-5 w-5" />
                   Risk Distribution
                 </CardTitle>
@@ -303,40 +314,39 @@ const RiskAnalysis = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <CardHeader>
-                <CardTitle>Risk Assessment Summary</CardTitle>
+                <CardTitle className="text-gray-900 dark:text-gray-100">Risk Assessment Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {riskDistribution.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                     <div className="flex items-center space-x-3">
-                      <div 
-                        className="w-4 h-4 rounded-full" 
+                      <div
+                        className="w-4 h-4 rounded-full"
                         style={{ backgroundColor: item.color }}
                       />
-                      <span className="font-medium">{item.name}</span>
+                      <span className="font-medium text-gray-900 dark:text-gray-100">{item.name}</span>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold">{item.value}%</div>
-                      <div className="text-xs text-gray-500">of total risk</div>
+                      <div className="font-bold text-gray-900 dark:text-gray-100">{item.value}%</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">of total risk</div>
                     </div>
                   </div>
-                ))}
-              </CardContent>
+                ))}n              </CardContent>
             </Card>
           </div>
         </TabsContent>
 
         <TabsContent value="factors" className="space-y-6">
           {/* Risk Factors Comparison */}
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
                 <BarChart3 className="mr-2 h-5 w-5" />
                 Risk Factors Analysis
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-gray-600 dark:text-gray-400">
                 Current vs baseline risk factor comparison
               </CardDescription>
             </CardHeader>
@@ -359,38 +369,36 @@ const RiskAnalysis = () => {
           {/* Detailed Factors */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {riskFactorsData.map((factor, index) => (
-              <Card key={index}>
+              <Card key={index} className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold">{factor.factor}</h3>
-                    <Badge className={getRiskColor(factor.current) + ' ' + getRiskBgColor(factor.current)}>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">{factor.factor}</h3>
+                    <Badge className={`${getRiskColor(factor.current)} ${getRiskBgColor(factor.current)} dark:bg-gray-700 dark:text-gray-100`}>
                       {factor.current}%
                     </Badge>
                   </div>
                   <div className="space-y-3">
                     <div>
                       <div className="flex justify-between text-sm mb-1">
-                        <span>Current Level</span>
-                        <span className="font-semibold">{factor.current}%</span>
+                        <span className="text-gray-700 dark:text-gray-300">Current Level</span>
+                        <span className="font-semibold text-gray-900 dark:text-gray-100">{factor.current}%</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full ${
-                            factor.current < 30 ? 'bg-green-500' :
+                      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full ${factor.current < 30 ? 'bg-green-500' :
                             factor.current < 60 ? 'bg-amber-500' :
-                            'bg-red-500'
-                          }`}
+                              'bg-red-500'
+                            }`}
                           style={{ width: `${factor.current}%` }}
                         />
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-sm">
-                      <span>Change from baseline:</span>
-                      <span className={`font-semibold ${
-                        factor.change > 0 ? 'text-red-600' :
-                        factor.change < 0 ? 'text-green-600' :
-                        'text-gray-600'
-                      }`}>
+                      <span className="text-gray-700 dark:text-gray-300">Change from baseline:</span>
+                      <span className={`font-semibold ${factor.change > 0 ? 'text-red-600 dark:text-red-400' :
+                        factor.change < 0 ? 'text-green-600 dark:text-green-400' :
+                          'text-gray-600 dark:text-gray-400'
+                        }`}>
                         {factor.change > 0 ? '+' : ''}{factor.change}%
                       </span>
                     </div>
@@ -403,13 +411,13 @@ const RiskAnalysis = () => {
 
         <TabsContent value="sectors" className="space-y-6">
           {/* Sector Risk Comparison */}
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
                 <Target className="mr-2 h-5 w-5" />
                 Sector Risk Comparison
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-gray-600 dark:text-gray-400">
                 Risk levels and incident correlation by sector
               </CardDescription>
             </CardHeader>
@@ -433,26 +441,26 @@ const RiskAnalysis = () => {
           {/* Sector Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sectorRiskData.map((sector, index) => (
-              <Card key={index} className={getRiskBgColor(sector.risk)}>
+              <Card key={index} className={`${getRiskBgColor(sector.risk)} border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800`}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold">Sector {sector.sector}</h3>
-                    <Badge className={getRiskColor(sector.risk) + ' bg-white'}>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">Sector {sector.sector}</h3>
+                    <Badge className={`${getRiskColor(sector.risk)} bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100`}>
                       {sector.risk}% Risk
                     </Badge>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="text-center">
-                      <div className="text-2xl font-bold">{sector.incidents}</div>
-                      <div className="text-sm text-gray-600">Incidents</div>
+                      <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{sector.incidents}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Incidents</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-2xl font-bold">{sector.personnel}</div>
-                      <div className="text-sm text-gray-600">Personnel</div>
+                      <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{sector.personnel}</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Personnel</div>
                     </div>
                   </div>
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="text-xs text-gray-600">
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                    <div className="text-xs text-gray-600 dark:text-gray-400">
                       Risk per person: {(sector.risk / sector.personnel).toFixed(1)}%
                     </div>
                   </div>
@@ -464,13 +472,13 @@ const RiskAnalysis = () => {
 
         <TabsContent value="predictions" className="space-y-6">
           {/* Multi-factor Radar */}
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
                 <Activity className="mr-2 h-5 w-5" />
                 Multi-Factor Risk Assessment
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-gray-600 dark:text-gray-400">
                 Current performance vs baseline across all risk factors
               </CardDescription>
             </CardHeader>
@@ -506,54 +514,54 @@ const RiskAnalysis = () => {
 
           {/* Prediction Models */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
               <CardContent className="p-6">
                 <div className="flex items-center mb-4">
-                  <Zap className="h-6 w-6 text-blue-600 mr-3" />
-                  <h3 className="font-semibold text-blue-800">Next 24 Hours</h3>
+                  <Zap className="h-6 w-6 text-blue-600 dark:text-blue-400 mr-3" />
+                  <h3 className="font-semibold text-blue-800 dark:text-blue-300">Next 24 Hours</h3>
                 </div>
                 <div className="space-y-3">
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-red-600">75%</div>
-                    <div className="text-sm text-gray-600">Predicted Risk Level</div>
+                    <div className="text-3xl font-bold text-red-600 dark:text-red-400">75%</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Predicted Risk Level</div>
                   </div>
-                  <div className="text-xs text-blue-700">
+                  <div className="text-xs text-blue-700 dark:text-blue-300">
                     Expected increase due to weather conditions and ground instability.
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
+            <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800">
               <CardContent className="p-6">
                 <div className="flex items-center mb-4">
-                  <Clock className="h-6 w-6 text-purple-600 mr-3" />
-                  <h3 className="font-semibold text-purple-800">Next 7 Days</h3>
+                  <Clock className="h-6 w-6 text-purple-600 dark:text-purple-400 mr-3" />
+                  <h3 className="font-semibold text-purple-800 dark:text-purple-300">Next 7 Days</h3>
                 </div>
                 <div className="space-y-3">
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-amber-600">55%</div>
-                    <div className="text-sm text-gray-600">Average Risk Level</div>
+                    <div className="text-3xl font-bold text-amber-600 dark:text-amber-400">55%</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Average Risk Level</div>
                   </div>
-                  <div className="text-xs text-purple-700">
+                  <div className="text-xs text-purple-700 dark:text-purple-300">
                     Stabilization expected as weather improves and mitigation measures take effect.
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
               <CardContent className="p-6">
                 <div className="flex items-center mb-4">
-                  <Target className="h-6 w-6 text-green-600 mr-3" />
-                  <h3 className="font-semibold text-green-800">Long Term</h3>
+                  <Target className="h-6 w-6 text-green-600 dark:text-green-400 mr-3" />
+                  <h3 className="font-semibold text-green-800 dark:text-green-300">Long Term</h3>
                 </div>
                 <div className="space-y-3">
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-green-600">25%</div>
-                    <div className="text-sm text-gray-600">Target Risk Level</div>
+                    <div className="text-3xl font-bold text-green-600 dark:text-green-400">25%</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Target Risk Level</div>
                   </div>
-                  <div className="text-xs text-green-700">
+                  <div className="text-xs text-green-700 dark:text-green-300">
                     Achievable through continued monitoring and proactive interventions.
                   </div>
                 </div>

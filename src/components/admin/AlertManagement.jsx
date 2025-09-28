@@ -1,10 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Input } from '../ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { useMine } from '../../contexts/MineContext';
+import { useTheme } from '../../contexts/ThemeContext';
+import PageHeader from '../PageHeader';
 import {
   AlertTriangle,
   Bell,
@@ -28,6 +30,12 @@ const AlertManagement = () => {
   const [selectedPriority, setSelectedPriority] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Use global mine context
+  const { currentMine } = useMine();
+
+  // Get mine-specific alert data
+  const mineAlerts = [];  // Will be updated to use mine-specific alerts when available
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -203,51 +211,47 @@ const AlertManagement = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">Alert Management</h1>
-            <p className="text-gray-600 mt-1">Monitor, acknowledge, and manage all system alerts</p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="grid grid-cols-4 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-red-600">
-                  {alertsData.filter(a => a.priority === 'critical').length}
-                </div>
-                <div className="text-xs text-gray-600">Critical</div>
+    <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <PageHeader
+        title="Alert Management"
+        description="Monitor, acknowledge, and manage all system alerts"
+      >
+        <div className="flex items-center space-x-4">
+          <div className="grid grid-cols-4 gap-4 text-center">
+            <div>
+              <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                {(Array.isArray(mineAlerts) ? mineAlerts : alertsData).filter(a => a.priority === 'critical').length}
               </div>
-              <div>
-                <div className="text-2xl font-bold text-amber-600">
-                  {alertsData.filter(a => a.priority === 'warning').length}
-                </div>
-                <div className="text-xs text-gray-600">Warning</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-blue-600">
-                  {alertsData.filter(a => a.priority === 'info').length}
-                </div>
-                <div className="text-xs text-gray-600">Info</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-600">
-                  {alertsData.filter(a => a.status === 'resolved').length}
-                </div>
-                <div className="text-xs text-gray-600">Resolved</div>
-              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">Critical</div>
             </div>
-            <Button className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700">
-              <Bell className="mr-2 h-4 w-4" />
-              Configure Alerts
-            </Button>
+            <div>
+              <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                {(Array.isArray(mineAlerts) ? mineAlerts : alertsData).filter(a => a.priority === 'warning').length}
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">Warning</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {(Array.isArray(mineAlerts) ? mineAlerts : alertsData).filter(a => a.priority === 'info').length}
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">Info</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                {(Array.isArray(mineAlerts) ? mineAlerts : alertsData).filter(a => a.status === 'resolved').length}
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-400">Resolved</div>
+            </div>
           </div>
+          <Button className="bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700">
+            <Bell className="mr-2 h-4 w-4" />
+            Configure Alerts
+          </Button>
         </div>
-      </div>
+      </PageHeader>
 
       <Tabs defaultValue="active" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-4 bg-gray-100 dark:bg-gray-800">
           <TabsTrigger value="active">Active Alerts</TabsTrigger>
           <TabsTrigger value="history">Alert History</TabsTrigger>
           <TabsTrigger value="settings">Alert Settings</TabsTrigger>
@@ -256,7 +260,7 @@ const AlertManagement = () => {
 
         <TabsContent value="active" className="space-y-6">
           {/* Filters */}
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
                 <div className="flex-1">
@@ -266,16 +270,16 @@ const AlertManagement = () => {
                       placeholder="Search alerts by title, description, or sector..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
                     />
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Filter className="h-4 w-4 text-gray-500" />
+                  <Filter className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                   <select
                     value={selectedPriority}
                     onChange={(e) => setSelectedPriority(e.target.value)}
-                    className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    className="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   >
                     <option value="all">All Priorities</option>
                     <option value="critical">Critical</option>
@@ -285,7 +289,7 @@ const AlertManagement = () => {
                   <select
                     value={selectedStatus}
                     onChange={(e) => setSelectedStatus(e.target.value)}
-                    className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    className="border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   >
                     <option value="all">All Statuses</option>
                     <option value="active">Active</option>
@@ -301,9 +305,9 @@ const AlertManagement = () => {
           {/* Alert List */}
           <div className="space-y-4">
             {filteredAlerts.map((alert) => (
-              <Card key={alert.id} className={`transition-all duration-200 hover:shadow-lg ${alert.priority === 'critical' ? 'border-l-4 border-l-red-500' :
-                  alert.priority === 'warning' ? 'border-l-4 border-l-amber-500' :
-                    'border-l-4 border-l-blue-500'
+              <Card key={alert.id} className={`transition-all duration-200 hover:shadow-lg bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 ${alert.priority === 'critical' ? 'border-l-4 border-l-red-500' :
+                alert.priority === 'warning' ? 'border-l-4 border-l-amber-500' :
+                  'border-l-4 border-l-blue-500'
                 }`}>
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
@@ -323,10 +327,10 @@ const AlertManagement = () => {
                         </div>
                       </div>
 
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{alert.title}</h3>
-                      <p className="text-gray-600 mb-3">{alert.description}</p>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{alert.title}</h3>
+                      <p className="text-gray-600 dark:text-gray-400 mb-3">{alert.description}</p>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-500">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-500 dark:text-gray-400">
                         <div>
                           <span className="font-medium">Sector:</span> {alert.sector}
                         </div>
@@ -342,8 +346,8 @@ const AlertManagement = () => {
                       </div>
 
                       {(alert.acknowledgedBy || alert.resolvedBy) && (
-                        <div className="mt-3 pt-3 border-t border-gray-100">
-                          <div className="flex items-center space-x-4 text-sm text-gray-500">
+                        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                          <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                             {alert.acknowledgedBy && (
                               <div>
                                 <span className="font-medium">Acknowledged by:</span> {alert.acknowledgedBy}
@@ -403,21 +407,21 @@ const AlertManagement = () => {
         </TabsContent>
 
         <TabsContent value="history" className="space-y-6">
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
                 <Archive className="mr-2 h-5 w-5" />
                 Alert History
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-gray-600 dark:text-gray-400">
                 Historical alert data and resolution statistics
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-12">
                 <Archive className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Alert History</h3>
-                <p className="text-gray-600">Detailed alert history and analytics will be displayed here</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Alert History</h3>
+                <p className="text-gray-600 dark:text-gray-400">Detailed alert history and analytics will be displayed here</p>
               </div>
             </CardContent>
           </Card>
@@ -425,25 +429,25 @@ const AlertManagement = () => {
 
         <TabsContent value="settings" className="space-y-6">
           {/* Worker Notification System */}
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardHeader>
-              <CardTitle className="flex items-center">
+              <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
                 <Users className="mr-2 h-5 w-5" />
                 Worker Notification System
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-gray-600 dark:text-gray-400">
                 Manage how workers receive safety alerts and emergency notifications
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Emergency Broadcast */}
-                <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+                <div className="p-4 border border-red-200 dark:border-red-800 rounded-lg bg-red-50 dark:bg-red-900/20">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-red-800">Emergency Broadcast</h3>
-                    <Radio className="h-5 w-5 text-red-600" />
+                    <h3 className="font-semibold text-red-800 dark:text-red-300">Emergency Broadcast</h3>
+                    <Radio className="h-5 w-5 text-red-600 dark:text-red-400" />
                   </div>
-                  <p className="text-sm text-red-700 mb-4">
+                  <p className="text-sm text-red-700 dark:text-red-300 mb-4">
                     Send immediate safety alerts to all personnel in affected sectors
                   </p>
                   <Button className="w-full bg-red-600 hover:bg-red-700 text-white">
@@ -453,12 +457,12 @@ const AlertManagement = () => {
                 </div>
 
                 {/* Safety Announcements */}
-                <div className="p-4 border border-amber-200 rounded-lg bg-amber-50">
+                <div className="p-4 border border-amber-200 dark:border-amber-800 rounded-lg bg-amber-50 dark:bg-amber-900/20">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-amber-800">Safety Announcements</h3>
-                    <Bell className="h-5 w-5 text-amber-600" />
+                    <h3 className="font-semibold text-amber-800 dark:text-amber-300">Safety Announcements</h3>
+                    <Bell className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                   </div>
-                  <p className="text-sm text-amber-700 mb-4">
+                  <p className="text-sm text-amber-700 dark:text-amber-300 mb-4">
                     Send safety reminders and protocol updates to workers
                   </p>
                   <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white">
@@ -468,12 +472,12 @@ const AlertManagement = () => {
                 </div>
 
                 {/* Evacuation Alerts */}
-                <div className="p-4 border border-orange-200 rounded-lg bg-orange-50">
+                <div className="p-4 border border-orange-200 dark:border-orange-800 rounded-lg bg-orange-50 dark:bg-orange-900/20">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-orange-800">Evacuation Alerts</h3>
-                    <AlertTriangle className="h-5 w-5 text-orange-600" />
+                    <h3 className="font-semibold text-orange-800 dark:text-orange-300">Evacuation Alerts</h3>
+                    <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                   </div>
-                  <p className="text-sm text-orange-700 mb-4">
+                  <p className="text-sm text-orange-700 dark:text-orange-300 mb-4">
                     Trigger sector-specific or mine-wide evacuation procedures
                   </p>
                   <Button className="w-full bg-orange-600 hover:bg-orange-700 text-white">
@@ -483,12 +487,12 @@ const AlertManagement = () => {
                 </div>
 
                 {/* Equipment Alerts */}
-                <div className="p-4 border border-blue-200 rounded-lg bg-blue-50">
+                <div className="p-4 border border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-900/20">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-blue-800">Equipment Alerts</h3>
-                    <Settings className="h-5 w-5 text-blue-600" />
+                    <h3 className="font-semibold text-blue-800 dark:text-blue-300">Equipment Alerts</h3>
+                    <Settings className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <p className="text-sm text-blue-700 mb-4">
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mb-4">
                     Notify workers about equipment malfunctions or maintenance
                   </p>
                   <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
@@ -499,38 +503,38 @@ const AlertManagement = () => {
               </div>
 
               {/* Notification Channels */}
-              <div className="border-t pt-6">
-                <h3 className="font-semibold text-gray-800 mb-4">Active Notification Channels</h3>
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4">Active Notification Channels</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-3 border rounded-lg">
+                  <div className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <Radio className="h-4 w-4 text-green-600" />
-                        <span className="text-sm font-medium">Radio System</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Radio System</span>
                       </div>
-                      <Badge className="bg-green-100 text-green-800">Active</Badge>
+                      <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">Active</Badge>
                     </div>
-                    <p className="text-xs text-gray-600 mt-1">47 devices connected</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">47 devices connected</p>
                   </div>
-                  <div className="p-3 border rounded-lg">
+                  <div className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <Phone className="h-4 w-4 text-green-600" />
-                        <span className="text-sm font-medium">Mobile Alerts</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Mobile Alerts</span>
                       </div>
-                      <Badge className="bg-green-100 text-green-800">Active</Badge>
+                      <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">Active</Badge>
                     </div>
-                    <p className="text-xs text-gray-600 mt-1">52 phones registered</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">52 phones registered</p>
                   </div>
-                  <div className="p-3 border rounded-lg">
+                  <div className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <Bell className="h-4 w-4 text-green-600" />
-                        <span className="text-sm font-medium">Alarm System</span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Alarm System</span>
                       </div>
-                      <Badge className="bg-green-100 text-green-800">Active</Badge>
+                      <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">Active</Badge>
                     </div>
-                    <p className="text-xs text-gray-600 mt-1">12 zones covered</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">12 zones covered</p>
                   </div>
                 </div>
               </div>
@@ -538,9 +542,9 @@ const AlertManagement = () => {
           </Card>
           {/* Alert Configuration */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
+            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <CardHeader>
-                <CardTitle className="flex items-center">
+                <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
                   <Settings className="mr-2 h-5 w-5" />
                   Alert Thresholds
                 </CardTitle>
@@ -548,19 +552,19 @@ const AlertManagement = () => {
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Critical Risk Level</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Critical Risk Level</span>
                     <Badge className="bg-red-100 text-red-800">≥ 70%</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Warning Risk Level</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Warning Risk Level</span>
                     <Badge className="bg-amber-100 text-amber-800">30-69%</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Low Battery Warning</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Low Battery Warning</span>
                     <Badge className="bg-blue-100 text-blue-800">≤ 25%</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Communication Timeout</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Communication Timeout</span>
                     <Badge className="bg-purple-100 text-purple-800"> 10 min</Badge>
                   </div>
                 </div>
@@ -570,9 +574,9 @@ const AlertManagement = () => {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
               <CardHeader>
-                <CardTitle className="flex items-center">
+                <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
                   <Bell className="mr-2 h-5 w-5" />
                   Notification Settings
                 </CardTitle>
@@ -581,31 +585,31 @@ const AlertManagement = () => {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <Mail className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm font-medium">Email Notifications</span>
+                      <Mail className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Email Notifications</span>
                     </div>
-                    <Badge className="bg-green-100 text-green-800">Enabled</Badge>
+                    <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">Enabled</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <Phone className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm font-medium">SMS Alerts</span>
+                      <Phone className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">SMS Alerts</span>
                     </div>
-                    <Badge className="bg-green-100 text-green-800">Critical Only</Badge>
+                    <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">Critical Only</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <Radio className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm font-medium">Radio Broadcast</span>
+                      <Radio className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Radio Broadcast</span>
                     </div>
-                    <Badge className="bg-amber-100 text-amber-800">Emergency Only</Badge>
+                    <Badge className="bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200">Emergency Only</Badge>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <Bell className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm font-medium">Dashboard Alerts</span>
+                      <Bell className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Dashboard Alerts</span>
                     </div>
-                    <Badge className="bg-green-100 text-green-800">All Levels</Badge>
+                    <Badge className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">All Levels</Badge>
                   </div>
                 </div>
                 <Button className="w-full mt-4" variant="outline">
@@ -617,18 +621,18 @@ const AlertManagement = () => {
         </TabsContent>
 
         <TabsContent value="reports" className="space-y-6">
-          <Card>
+          <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
             <CardHeader>
-              <CardTitle>Alert Reports & Analytics</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-gray-900 dark:text-gray-100">Alert Reports & Analytics</CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-400">
                 Generate detailed reports on alert patterns and response times
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-12">
                 <BarChart3 className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Alert Analytics</h3>
-                <p className="text-gray-600">Comprehensive alert reporting and analytics dashboard</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Alert Analytics</h3>
+                <p className="text-gray-600 dark:text-gray-400">Comprehensive alert reporting and analytics dashboard</p>
                 <Button className="mt-4">
                   Generate Report
                 </Button>
