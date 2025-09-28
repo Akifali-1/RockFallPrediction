@@ -106,7 +106,7 @@ const ImprovedAdminLayout = ({ children, activeSection, setActiveSection }) => {
       <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm">
         <div className="flex items-center justify-between px-6 py-3">
           {/* Left side - Logo & Menu */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-6">
             <Button
               variant="ghost"
               size="sm"
@@ -116,7 +116,7 @@ const ImprovedAdminLayout = ({ children, activeSection, setActiveSection }) => {
               {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-4">
               <div className="bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl p-2 shadow-lg">
                 <Shield className="h-6 w-6 text-white" />
               </div>
@@ -130,7 +130,7 @@ const ImprovedAdminLayout = ({ children, activeSection, setActiveSection }) => {
           </div>
 
           {/* Center - Search */}
-          <div className="hidden md:flex flex-1 max-w-md mx-8">
+          <div className="hidden md:flex flex-1 max-w-md mx-12">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
               <input
@@ -142,7 +142,7 @@ const ImprovedAdminLayout = ({ children, activeSection, setActiveSection }) => {
           </div>
 
           {/* Right side - Actions */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-4">
             <ThemeToggle />
             {/* Notifications */}
             <Button variant="ghost" size="sm" className="relative hover:bg-gray-100 dark:hover:bg-gray-800">
@@ -154,8 +154,19 @@ const ImprovedAdminLayout = ({ children, activeSection, setActiveSection }) => {
               )}
             </Button>
 
+            {/* Logout Button */}
+            <Button
+              onClick={handleLogout}
+              variant="ghost"
+              size="sm"
+              className="hidden sm:flex items-center space-x-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+            >
+              <LogOut className="h-5 w-5" />
+              <span>Logout</span>
+            </Button>
+
             {/* User Menu */}
-            <div className="flex items-center space-x-3 pl-3 border-l border-gray-200 dark:border-gray-700">
+            <div className="flex items-center space-x-3 pl-4 border-l border-gray-200 dark:border-gray-700">
               <div className="hidden sm:block text-right">
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Demo User</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Safety Administrator</p>
@@ -200,7 +211,7 @@ const ImprovedAdminLayout = ({ children, activeSection, setActiveSection }) => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-6 space-y-2 overflow-y-auto max-h-[calc(100vh-280px)] sidebar-nav">
+        <nav className="flex-1 p-6 space-y-3 overflow-y-auto max-h-[calc(100vh-280px)] sidebar-nav">
           <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">
             Main Navigation
           </div>
@@ -216,14 +227,14 @@ const ImprovedAdminLayout = ({ children, activeSection, setActiveSection }) => {
                   setSidebarOpen(false);
                 }}
                 className={`w-full group relative overflow-hidden rounded-2xl transition-all duration-200 ${isActive
-                    ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25 scale-[1.02]'
-                    : 'hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 hover:shadow-md'
+                  ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg shadow-blue-500/25 scale-[1.02]'
+                  : 'hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 hover:shadow-md'
                   }`}
               >
                 <div className="flex items-center p-4">
                   <div className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all ${isActive
-                      ? 'bg-white/20 text-white'
-                      : `${item.color} text-white group-hover:scale-110`
+                    ? 'bg-white/20 text-white'
+                    : `${item.color} text-white group-hover:scale-110`
                     }`}>
                     <Icon className="h-5 w-5" />
                   </div>
@@ -231,15 +242,15 @@ const ImprovedAdminLayout = ({ children, activeSection, setActiveSection }) => {
                     <div className={`font-semibold ${isActive ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}>
                       {item.label}
                     </div>
-                    <div className={`text-xs ${isActive ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
+                    <div className={`text-xs mt-1 ${isActive ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
                       {item.description}
                     </div>
                   </div>
                   {item.badge && (
                     <Badge
                       className={`text-xs ${isActive
-                          ? 'bg-white/20 text-white border-white/30'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                        ? 'bg-white/20 text-white border-white/30'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
                         }`}
                     >
                       {item.badge}
@@ -285,6 +296,17 @@ const ImprovedAdminLayout = ({ children, activeSection, setActiveSection }) => {
           onClick={() => setSidebarOpen(false)}
         />
       )}
+
+      {/* Mobile Logout Button - Only visible on mobile when sidebar is open */}
+      <div className="lg:hidden fixed bottom-4 left-4 right-4 z-50">
+        <Button
+          onClick={handleLogout}
+          className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg"
+        >
+          <LogOut className="mr-2 h-5 w-5" />
+          Logout
+        </Button>
+      </div>
 
       {/* Main content */}
       <div className="lg:ml-80 pt-16">

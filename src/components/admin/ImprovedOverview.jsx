@@ -378,18 +378,18 @@ const ImprovedOverview = () => {
         showMineSelector={true}
         showThemeToggle={true}
       >
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3 bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded-full border border-green-200 dark:border-green-800">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span className="text-xs text-green-600 dark:text-green-400 font-medium">Live Data</span>
+          <span className="text-xs text-green-700 dark:text-green-300 font-medium">Live Data</span>
         </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Last Updated</p>
-          <p className="font-mono text-sm font-semibold text-green-600 dark:text-green-400">{currentTime.toLocaleTimeString()}</p>
+        <div className="text-right bg-gray-50 dark:bg-gray-700 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600">
+          <p className="text-xs text-gray-500 dark:text-gray-400">Last Updated</p>
+          <p className="font-mono text-sm font-semibold text-gray-700 dark:text-gray-300">{currentTime.toLocaleTimeString()}</p>
         </div>
         <Button
           onClick={handleEmergencyEvacuation}
           disabled={isLoading}
-          className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 px-6 transform hover:scale-105 transition-all duration-200"
+          className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-4 py-2 rounded-lg transform hover:scale-105 transition-all duration-200 shadow-md hover:shadow-lg"
         >
           {isLoading ? (
             <div className="flex items-center">
@@ -399,7 +399,8 @@ const ImprovedOverview = () => {
           ) : (
             <>
               <AlertTriangle className="mr-2 h-4 w-4" />
-              Emergency Evacuation
+              <span className="hidden sm:inline">Emergency Evacuation</span>
+              <span className="sm:hidden">Emergency</span>
             </>
           )}
         </Button>
@@ -408,13 +409,13 @@ const ImprovedOverview = () => {
       {/* Critical Metrics Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Overall Risk */}
-        <Card className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-orange-200 dark:border-orange-800">
+        <Card className="bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border border-orange-200 dark:border-orange-800 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Overall Risk</p>
                 <div className="flex items-center mt-2">
-                  <div className={`bg-gradient-to-r text-white px-3 py-1 rounded-full text-lg font-bold ${currentMine.riskLevel === 'Critical' ? 'from-red-500 to-red-700' :
+                  <div className={`bg-gradient-to-r text-white px-4 py-2 rounded-full text-lg font-bold shadow-sm ${currentMine.riskLevel === 'Critical' ? 'from-red-500 to-red-700' :
                     currentMine.riskLevel === 'High' ? 'from-orange-500 to-red-500' :
                       currentMine.riskLevel === 'Medium' ? 'from-yellow-500 to-orange-500' : 'from-green-500 to-green-700'
                     }`}>
@@ -422,7 +423,7 @@ const ImprovedOverview = () => {
                   </div>
                 </div>
               </div>
-              <Shield className={`h-8 w-8 ${currentMine.riskLevel === 'Critical' ? 'text-red-500' :
+              <Shield className={`h-10 w-10 ${currentMine.riskLevel === 'Critical' ? 'text-red-500' :
                 currentMine.riskLevel === 'High' ? 'text-orange-500' :
                   currentMine.riskLevel === 'Medium' ? 'text-yellow-500' : 'text-green-500'
                 }`} />
@@ -432,8 +433,8 @@ const ImprovedOverview = () => {
                 currentMine.riskLevel === 'Critical' ? 95 :
                   currentMine.riskLevel === 'High' ? 80 :
                     currentMine.riskLevel === 'Medium' ? 65 : 30
-              } className="h-2" />
-              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">Risk Level: {
+              } className="h-2 rounded-full" />
+              <p className="text-xs text-orange-600 dark:text-orange-400 mt-2">Risk Level: {
                 currentMine.riskLevel === 'Critical' ? '95%' :
                   currentMine.riskLevel === 'High' ? '80%' :
                     currentMine.riskLevel === 'Medium' ? '65%' : '30%'
@@ -443,7 +444,7 @@ const ImprovedOverview = () => {
         </Card>
 
         {/* Active Sensors */}
-        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -453,17 +454,17 @@ const ImprovedOverview = () => {
                   <span className="text-gray-500 dark:text-gray-400 ml-1">/{currentMine.sensors.total}</span>
                 </div>
               </div>
-              <Activity className="h-8 w-8 text-green-500" />
+              <Activity className="h-10 w-10 text-green-500" />
             </div>
             <div className="mt-4">
-              <Progress value={Math.round((currentMine.sensors.active / currentMine.sensors.total) * 100)} className="h-2" />
-              <p className="text-xs text-green-600 dark:text-green-400 mt-1">{Math.round((currentMine.sensors.active / currentMine.sensors.total) * 100)}% Operational</p>
+              <Progress value={Math.round((currentMine.sensors.active / currentMine.sensors.total) * 100)} className="h-2 rounded-full" />
+              <p className="text-xs text-green-600 dark:text-green-400 mt-2">{Math.round((currentMine.sensors.active / currentMine.sensors.total) * 100)}% Operational</p>
             </div>
           </CardContent>
         </Card>
 
         {/* Personnel */}
-        <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-blue-200 dark:border-blue-800">
+        <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -473,30 +474,30 @@ const ImprovedOverview = () => {
                   <span className="text-gray-500 dark:text-gray-400 ml-1">/{currentMine.personnel}</span>
                 </div>
               </div>
-              <Users className="h-8 w-8 text-blue-500" />
+              <Users className="h-10 w-10 text-blue-500" />
             </div>
             <div className="mt-4">
-              <Progress value={90} className="h-2" />
-              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">90% Present</p>
+              <Progress value={90} className="h-2 rounded-full" />
+              <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">90% Present</p>
             </div>
           </CardContent>
         </Card>
 
         {/* Critical Alerts */}
-        <Card className="bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border-red-200 dark:border-red-800">
+        <Card className="bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border border-red-200 dark:border-red-800 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-red-600 dark:text-red-400">Critical Alerts</p>
                 <div className="flex items-center mt-2">
                   <span className="text-2xl font-bold text-red-700 dark:text-red-300">{currentMine.alerts}</span>
-                  <TrendingUp className="h-4 w-4 text-red-500 ml-2" />
+                  <TrendingUp className="h-5 w-5 text-red-500 ml-2" />
                 </div>
               </div>
-              <AlertTriangle className="h-8 w-8 text-red-500" />
+              <AlertTriangle className="h-10 w-10 text-red-500" />
             </div>
             <div className="mt-4">
-              <Badge variant="destructive" className="text-xs">
+              <Badge variant="destructive" className="text-xs px-2 py-1">
                 {currentMine.alerts > 5 ? 'High Priority' : 'Requires Attention'}
               </Badge>
             </div>
@@ -505,52 +506,55 @@ const ImprovedOverview = () => {
       </div>
 
       {/* Critical Mines Alert Section */}
-      <Card className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-red-200 dark:border-red-800">
-        <CardHeader>
+      <Card className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border border-red-200 dark:border-red-800 rounded-2xl shadow-sm">
+        <CardHeader className="pb-4">
           <CardTitle className="flex items-center text-red-700 dark:text-red-400">
             <AlertTriangle className="mr-2 h-5 w-5" />
             Critical Mines Requiring Attention
           </CardTitle>
-          <CardDescription className="dark:text-gray-400">Mines with high risk levels that need immediate monitoring</CardDescription>
+          <CardDescription className="text-gray-600 dark:text-gray-400">
+            Mines with high risk levels that need immediate monitoring
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {criticalMines.map((mine) => (
               <div
                 key={mine.id}
-                className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${selectedMine === mine.id
-                  ? 'border-red-500 bg-red-100 dark:bg-red-900/30'
+                className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${selectedMine === mine.id
+                  ? 'border-red-500 bg-red-100 dark:bg-red-900/30 shadow-sm'
                   : 'border-red-200 dark:border-red-700 bg-white dark:bg-gray-800 hover:border-red-300 dark:hover:border-red-600'
                   }`}
                 onClick={() => handleMineSelection(mine.id)}
               >
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-2">
                     <div className={`w-3 h-3 rounded-full ${mine.riskLevel === 'Critical' ? 'bg-red-500 animate-pulse' :
                       mine.riskLevel === 'High' ? 'bg-orange-500' : 'bg-yellow-500'
                       }`}></div>
-                    <h3 className="font-semibold text-gray-800 dark:text-gray-200">{mine.name}</h3>
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-sm">{mine.name}</h3>
                   </div>
-                  <Badge variant="destructive" className="text-xs">
+                  <Badge variant="destructive" className="text-xs px-2 py-0.5">
                     {mine.riskLevel}
                   </Badge>
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                   <div className="flex items-center">
-                    <MapPin className="h-3 w-3 mr-1" />
-                    {mine.location}
+                    <MapPin className="h-3 w-3 mr-1 text-gray-500 dark:text-gray-400" />
+                    <span className="truncate">{mine.location}</span>
                   </div>
                   <div className="flex items-center">
-                    <Users className="h-3 w-3 mr-1" />
+                    <Users className="h-3 w-3 mr-1 text-gray-500 dark:text-gray-400" />
                     {mine.personnel} Personnel
                   </div>
                   <div className="flex items-center">
-                    <AlertCircle className="h-3 w-3 mr-1" />
+                    <AlertCircle className="h-3 w-3 mr-1 text-gray-500 dark:text-gray-400" />
                     {mine.alerts} Active Alerts
                   </div>
                 </div>
                 {selectedMine === mine.id && (
-                  <div className="mt-2 text-xs text-red-600 dark:text-red-400 font-medium">
+                  <div className="mt-3 text-xs text-red-600 dark:text-red-400 font-medium flex items-center">
+                    <div className="w-2 h-2 bg-red-500 rounded-full mr-1"></div>
                     Currently Selected
                   </div>
                 )}
@@ -561,8 +565,8 @@ const ImprovedOverview = () => {
       </Card>
 
       {/* Risk Prediction Over Time */}
-      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-        <CardHeader>
+      <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm">
+        <CardHeader className="pb-4">
           <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
             <TrendingUp className="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400" />
             Risk Prediction Timeline - Next 24 Hours
@@ -571,13 +575,21 @@ const ImprovedOverview = () => {
             AI-powered risk predictions across all categories with real-time analysis
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={riskPredictionData}>
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis dataKey="time" />
-                <YAxis domain={[0, 100]} />
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" stroke="#e5e7eb" />
+                <XAxis
+                  dataKey="time"
+                  tick={{ fontSize: 12 }}
+                  tickMargin={10}
+                />
+                <YAxis
+                  domain={[0, 100]}
+                  tick={{ fontSize: 12 }}
+                  tickMargin={10}
+                />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'white',
@@ -585,6 +597,7 @@ const ImprovedOverview = () => {
                     borderRadius: '12px',
                     boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)'
                   }}
+                  labelStyle={{ fontWeight: 'bold', color: '#374151' }}
                 />
                 <Area
                   type="monotone"
@@ -1029,24 +1042,26 @@ const ImprovedOverview = () => {
       </div>
 
       {/* Sensor Status Grid */}
-      <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
-        <CardHeader>
+      <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm">
+        <CardHeader className="pb-4">
           <CardTitle className="flex items-center text-gray-900 dark:text-gray-100">
             <Zap className="mr-2 h-5 w-5" />
             Live Sensor Network Status
           </CardTitle>
-          <CardDescription className="text-gray-600 dark:text-gray-400">Real-time monitoring of all sensor systems</CardDescription>
+          <CardDescription className="text-gray-600 dark:text-gray-400">
+            Real-time monitoring of all sensor systems
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {Object.entries(mockSensorData).map(([sensor, data]) => (
               <div
                 key={sensor}
-                className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl border border-gray-200 dark:border-gray-600"
+                className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md transition-shadow duration-200"
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="font-semibold capitalize text-gray-800 dark:text-gray-200">{sensor}</div>
-                  <Badge className={getRiskColor(data.status)}>
+                  <Badge className={`${getRiskColor(data.status)} px-2 py-1 text-xs`}>
                     {data.status.toUpperCase()}
                   </Badge>
                 </div>
@@ -1055,7 +1070,7 @@ const ImprovedOverview = () => {
                     <span className="text-gray-700 dark:text-gray-300">Current</span>
                     <span className="font-bold text-gray-900 dark:text-gray-100">{data.current}/{data.max}</span>
                   </div>
-                  <Progress value={data.percentage} className="h-3" />
+                  <Progress value={data.percentage} className="h-2 rounded-full" />
                   <div className="text-xs text-gray-600 dark:text-gray-400">{data.percentage}% of threshold</div>
                 </div>
               </div>

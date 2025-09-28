@@ -47,7 +47,7 @@ const PageHeader = ({
 
             {/* Controls Row - Mine Selector and Children */}
             {(showMineSelector || children) && (
-                <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-wrap">
+                <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center gap-6 flex-wrap">
                     {/* Mine Selector */}
                     {showMineSelector && (
                         <div className="w-full sm:w-auto">
@@ -57,7 +57,7 @@ const PageHeader = ({
 
                     {/* Additional children - can wrap to new lines */}
                     {children && (
-                        <div className="flex flex-wrap items-center gap-4 flex-1">
+                        <div className="flex flex-wrap items-center gap-6 flex-1">
                             {children}
                         </div>
                     )}
